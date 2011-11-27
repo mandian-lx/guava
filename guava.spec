@@ -1,6 +1,6 @@
 Name:           guava
 Version:        05
-Release:        5
+Release:        7
 Summary:        Google Core Libraries for Java
 
 Group:          Development/Java
