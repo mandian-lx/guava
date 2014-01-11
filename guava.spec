@@ -1,31 +1,24 @@
-Name:           guava
-Version:        05
-Release:        7
-Summary:        Google Core Libraries for Java
+%{?_javapackages_macros:%_javapackages_macros}
+Name:          guava
+Version:       13.0
+Release:       6.1%{?dist}
+Summary:       Google Core Libraries for Java
+License:       ASL 2.0 
+URL:           http://code.google.com/p/guava-libraries
+# git clone https://code.google.com/p/guava-libraries/
+# (cd ./guava-libraries && git archive --format=tar --prefix=guava-%{version}/ v%{version}) | xz >guava-%{version}.tar.xz
+Source0:       %{name}-%{version}.tar.xz
 
-Group:          Development/Java
-License:        ASL 2.0 
-URL:            http://code.google.com/p/guava-libraries
-#svn export http://guava-libraries.googlecode.com/svn/tags/release05/ guava-r05
-#tar jcf guava-r05.tar.bz2 guava-r05/
-Source0:        %{name}-r%{version}.tar.bz2
-#Remove parent definition which doesn't really to be used
-Patch0:        %{name}-pom.patch
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires: java-devel >= 0:1.7.0
+BuildRequires: mvn(org.sonatype.oss:oss-parent)
 
-BuildArch: noarch
+BuildRequires: maven-local
+BuildRequires: maven-dependency-plugin
 
-BuildRequires:  ant
-BuildRequires:  java-devel >= 0:1.6.0
-BuildRequires:  jpackage-utils
-BuildRequires:  jsr-305
-BuildRequires:  ant-nodeps
+BuildRequires: mvn(com.google.code.findbugs:jsr305) >= 0-0.6.20090319svn
+BuildRequires: ant
 
-Requires:       java
-Requires:       jpackage-utils
-
-Requires(post):       jpackage-utils
-Requires(postun):     jpackage-utils
+BuildArch:     noarch
 
 %description
 Guava is a suite of core and expanded libraries that include 
@@ -36,66 +29,92 @@ into a single jar.  Individual portions of Guava can be used
 by downloading the appropriate module and its dependencies.
 
 %package javadoc
-Group:          Development/Java
 Summary:        Javadoc for %{name}
-Requires:       jpackage-utils
 
 %description javadoc
 API documentation for %{name}.
 
-
 %prep
-%setup -q -n %{name}-r%{version}
+%setup -q -n %{name}-%{version}
+find . -name '*.jar' -delete
 
-%patch0 -p0
-
-sed -i "s/jsr305.jar/jsr-305.jar/" build.xml
+%pom_disable_module guava-gwt
+%pom_disable_module guava-testlib
+%pom_disable_module guava-tests
+%pom_remove_plugin :animal-sniffer-maven-plugin guava
+%pom_remove_plugin :maven-gpg-plugin
 
 %build
-rm lib/* -r
-build-jar-repository -s -p lib jsr-305
 
-ant -Drelease=%{version} -Djava5home=%{_jvmdir} dist
+%mvn_file :%{name} %{name}
+%mvn_alias :%{name} "com.google.collections:google-collections"
+%mvn_build
 
 %install
-rm -rf %{buildroot}
+%mvn_install
 
-# jars
-install -Dpm 644 build/dist/guava-r%{version}/%{name}-r%{version}.jar   %{buildroot}%{_javadir}/%{name}-%{version}.jar
+%files -f .mfiles
+%doc AUTHORS CONTRIBUTORS COPYING README*
 
-(cd %{buildroot}%{_javadir} && for jar in *-%{version}*; \
-    do ln -sf ${jar} `echo $jar| sed "s|-%{version}||g"`; done)
+%files javadoc -f .mfiles-javadoc
+%doc COPYING
 
-%add_to_maven_depmap com.google.guava %{name} %{version} JPP %{name}
-%add_to_maven_depmap com.google.collections google-collections 1.0 JPP %{name}
+%changelog
+* Mon Aug 12 2013 gil cattaneo <puntogil@libero.it> 13.0-6
+- fix rhbz#992456
+- update to current packaging guidelines
 
-# poms
-install -Dpm 644 pom.xml %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 13.0-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
-# javadoc
-install -d -m 0755 %{buildroot}%{_javadocdir}/%{name}-%{version}
-cp -pr build/javadoc/* %{buildroot}%{_javadocdir}/%{name}-%{version}/
-ln -s %{name}-%{version} %{buildroot}%{_javadocdir}/%{name}
-rm -rf build/javadoc/*
+* Fri Jun 28 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 13.0-4
+- Replace BR on ant-nodeps with ant
 
-%post
-%update_maven_depmap
+* Fri Jun 28 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 13.0-4
+- Rebuild to regenerate API documentation
+- Resolves: CVE-2013-1571
 
-%postun
-%update_maven_depmap
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 13.0-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
 
-%clean
-rm -rf %{buildroot}
+* Wed Feb 06 2013 Java SIG <java-devel@lists.fedoraproject.org> - 13.0-2
+- Update for https://fedoraproject.org/wiki/Fedora_19_Maven_Rebuild
+- Replace maven BuildRequires with maven-local
 
-%files
-%defattr(-,root,root,-)
-%doc COPYING README README.maven
-%{_javadir}/*
-%{_mavenpomdir}/*
-%{_mavendepmapfragdir}/*
+* Tue Aug  7 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 13.0-1
+- Update to upstream version 13.0
+- Remove RPM bug workaround
+- Convert patches to pom macros
 
-%files javadoc
-%defattr(-,root,root,-)
-%{_javadocdir}/%{name}-%{version}
-%{_javadocdir}/%{name}
+* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 11.0.2-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
+* Sat Apr 28 2012 gil cattaneo <puntogil@libero.it> 11.0.2-1
+- Update to 11.0.2
+
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 09-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Mon Sep 12 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 09-1
+- Update to 09
+- Packaging fixes
+- Build with maven
+
+* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 05-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Wed Jul 14 2010 Hui wang <huwang@redhat.com> - 05-4
+- Patch pom
+
+* Fri Jun 18 2010 Hui Wang <huwang@redhat.com> - 05-3
+- Fixed jar name in install section
+- Removed spaces in description
+
+* Thu Jun 17 2010 Hui Wang <huwang@redhat.com> - 05-2
+- Fixed summary
+- Fixed description
+- Fixed creating symlink insturctions
+- add depmap
+
+* Thu Jun 10 2010 Hui Wang <huwang@redhat.com> - 05-1
+- Initial version of the package
