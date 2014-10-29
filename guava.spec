@@ -1,13 +1,14 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:          guava
-Version:       13.0
-Release:       6.1%{?dist}
+Version:       17.0
+Release:       1
 Summary:       Google Core Libraries for Java
 License:       ASL 2.0 
 URL:           http://code.google.com/p/guava-libraries
 # git clone https://code.google.com/p/guava-libraries/
 # (cd ./guava-libraries && git archive --format=tar --prefix=guava-%{version}/ v%{version}) | xz >guava-%{version}.tar.xz
 Source0:       %{name}-%{version}.tar.xz
+Patch0:		guava-java8.patch
 
 BuildRequires: java-devel >= 0:1.7.0
 BuildRequires: mvn(org.sonatype.oss:oss-parent)
@@ -36,6 +37,7 @@ API documentation for %{name}.
 
 %prep
 %setup -q -n %{name}-%{version}
+%apply_patches
 find . -name '*.jar' -delete
 
 %pom_disable_module guava-gwt

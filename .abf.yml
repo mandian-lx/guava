@@ -1,2 +1,4 @@
-sources:
+removed_sources:
   guava-13.0.tar.xz: 8278c1f927a67fec1d9fe115c30f77332268909f
+sources:
+  guava-17.0.tar.xz: fd788220cbfeda1bf0aafd59a48f5f53a03a65ec
