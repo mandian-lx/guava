@@ -1,7 +1,7 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:          guava
 Version:       17.0
-Release:       3
+Release:       4
 Summary:       Google Core Libraries for Java
 License:       ASL 2.0 
 URL:           http://code.google.com/p/guava-libraries
