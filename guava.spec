@@ -11,7 +11,7 @@ Source0:       %{name}-%{version}.tar.xz
 Patch0:		guava-java8.patch
 
 BuildRequires: java-devel >= 0:1.7.0
-BuildRequires: mvn(org.sonatype.oss:oss-parent)
+BuildRequires: mvn(org.sonatype.oss:oss-parent:pom:)
 
 BuildRequires: maven-local
 BuildRequires: maven-dependency-plugin
