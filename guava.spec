@@ -1,8 +1,9 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:          guava
 Version:       17.0
-Release:       4
+Release:       4.1
 Summary:       Google Core Libraries for Java
+Group:		Development/Java
 License:       ASL 2.0 
 URL:           http://code.google.com/p/guava-libraries
 # git clone https://code.google.com/p/guava-libraries/
@@ -49,7 +50,7 @@ find . -name '*.jar' -delete
 %build
 
 %mvn_file :%{name} %{name}
-%mvn_alias :%{name} "com.google.collections:google-collections"
+%mvn_alias :%{name} com.google.collections:google-collections com.google.guava:guava-jdk5
 %mvn_build
 
 %install
