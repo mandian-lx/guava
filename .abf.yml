@@ -1,2 +1,4 @@
+removed_sources:
+  v18.0.tar.gz: 63e0357e9beff7ded24129083121f9c316ac11d5
 sources:
-  "v18.0.tar.gz":   63e0357e9beff7ded24129083121f9c316ac11d5
+  guava-24.0.tar.gz: 00293a85c644a14327051528a09da6bb67670103

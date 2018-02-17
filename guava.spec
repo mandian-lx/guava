@@ -1,30 +1,21 @@
 %{?_javapackages_macros:%_javapackages_macros}
 
-%if 0%{?fedora}
-%bcond_without testlib
-%endif
-
 Name:           guava
-Version:        18.0
-Release:        10%{?dist}
+Version:        24.0
+Release:        2%{?dist}.1
+Group:          Development/Java
 Summary:        Google Core Libraries for Java
 License:        ASL 2.0
 URL:            https://github.com/google/guava
 BuildArch:      noarch
 
-Source0:        https://github.com/google/guava/archive/v%{version}.tar.gz
-
-Patch0:         %{name}-java8.patch
-Patch1:         guava-jdk8-HashMap-testfix.patch
+Source0:        https://github.com/google/guava/archive/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  maven-local
 BuildRequires:  mvn(com.google.code.findbugs:jsr305)
+BuildRequires:  mvn(junit:junit)
 BuildRequires:  mvn(org.apache.felix:maven-bundle-plugin)
 BuildRequires:  mvn(org.sonatype.oss:oss-parent:pom:)
-%if %{with testlib}
-BuildRequires:  mvn(com.google.truth:truth)
-BuildRequires:  mvn(junit:junit)
-%endif
 
 %description
 Guava is a suite of core and expanded libraries that include
@@ -40,40 +31,55 @@ Summary:        Javadoc for %{name}
 %description javadoc
 API documentation for %{name}.
 
-%if %{with testlib}
 %package testlib
-Summary:        The guava-testlib subartefact
+Summary:        The guava-testlib artifact
 
 %description testlib
-guava-testlib provides additional functionality for conveinent unit testing
-%endif
+guava-testlib provides additional functionality for conveninent unit testing
 
 %prep
 %setup -q
-%patch0 -p1
-%patch1 -p1
+
 find . -name '*.jar' -delete
 
 %pom_disable_module guava-gwt
-%if %{without testlib}
-%pom_disable_module guava-testlib
-%endif
-%pom_remove_plugin -r :animal-sniffer-maven-plugin 
-%pom_remove_plugin :maven-gpg-plugin
-%pom_remove_dep jdk:srczip guava
+%pom_disable_module guava-tests
+
+%pom_remove_plugin -r :animal-sniffer-maven-plugin
+# Downloads JDK source for doc generation
+%pom_remove_plugin :maven-dependency-plugin guava
+
 %pom_remove_dep :caliper guava-tests
+
 %mvn_package :guava-parent guava
-%mvn_package :guava-tests __noinstall
 
 # javadoc generation fails due to strict doclint in JDK 1.8.0_45
 %pom_remove_plugin -r :maven-javadoc-plugin
 
 %pom_xpath_inject /pom:project/pom:build/pom:plugins/pom:plugin/pom:configuration/pom:instructions "<_nouses>true</_nouses>" guava/pom.xml
 
-%build
+%pom_remove_dep -r :animal-sniffer-annotations
+%pom_remove_dep -r :error_prone_annotations
+%pom_remove_dep -r :j2objc-annotations
+%pom_remove_dep -r org.checkerframework:
 
-%mvn_file :%{name} %{name}
-%mvn_alias :%{name} com.google.collections:google-collections com.google.guava:guava-jdk5
+annotations=$(
+    find -name '*.java' \
+    | xargs fgrep -h \
+        -e 'import com.google.j2objc.annotations' \
+        -e 'import com.google.errorprone.annotation' \
+        -e 'import org.codehaus.mojo.animal_sniffer' \
+        -e 'import org.checkerframework' \
+    | sort -u \
+    | sed 's/.*\.\([^.]*\);/\1/' \
+    | paste -sd\|
+)
+# guava started using quite a few annotation libraries for code quality, which
+# we don't have. This ugly regex is supposed to remove their usage from the code
+find -name '*.java' | xargs sed -ri \
+    "s/^import .*\.($annotations);//;s/@($annotations)"'\>\s*(\((("[^"]*")|([^)]*))\))?//g'
+
+%build
 # Tests fail on Koji due to insufficient memory,
 # see https://bugzilla.redhat.com/show_bug.cgi?id=1332971
 %mvn_build -s -f
@@ -82,17 +88,27 @@ find . -name '*.jar' -delete
 %mvn_install
 
 %files -f .mfiles-guava
-%doc AUTHORS CONTRIBUTORS README*
+%doc CONTRIBUTORS README*
 %doc COPYING
 
 %files javadoc -f .mfiles-javadoc
 %doc COPYING
 
-%if %{with testlib}
 %files testlib -f .mfiles-guava-testlib
-%endif
 
 %changelog
+* Fri Feb 09 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 24.0-2
+- Escape macros in %%changelog
+
+* Mon Feb 05 2018 Michael Simacek <msimacek@redhat.com> - 24.0-1
+- Update to upstream version 24.0
+
+* Mon Nov 06 2017 Michael Simacek <msimacek@redhat.com> - 20.0-1
+- Update to upstream version 20.0
+
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 18.0-11
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 18.0-10
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
@@ -124,7 +140,7 @@ find . -name '*.jar' -delete
 
 * Wed Jan  7 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 18.0-1
 - Update to v. 18 (#1175401)
-- Use %license
+- Use %%doc
 
 * Wed Oct  8 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 17.0-2
 - Add alias for com.google.guava:guava-jdk5
